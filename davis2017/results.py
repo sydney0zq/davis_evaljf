@@ -28,18 +28,17 @@ class Results(object):
             sys.stderr.write("IOError: " + err.strerror + "\n")
             sys.exit()
 
-    def read_masks(self, sequence, masks_id):
+    def read_masks(self, sequence, masks_id, parallel=True):
         num_objects = int(np.max(self._read_mask(sequence, "00000")))
         mask_0 = self._read_mask(sequence, masks_id[0])
-        # single process
-        masks = np.zeros((len(masks_id), *mask_0.shape))
-        for ii, m in enumerate(masks_id):
-            masks[ii, ...] = self._read_mask(sequence, m)
 
-        # multiple process
-        # masks_list = self.pool.map(read_mask_plain, [[self.root_dir, sequence, m] for m in masks_id])
-        # masks = np.concatenate([x[None, ...] for x in masks_list])
-
+        if parallel:
+            masks_list = self.pool.map(read_mask_plain, [[self.root_dir, sequence, m] for m in masks_id])
+            masks = np.concatenate([x[None, ...] for x in masks_list])
+        else:
+            masks = np.zeros((len(masks_id), *mask_0.shape))
+            for ii, m in enumerate(masks_id):
+                masks[ii, ...] = self._read_mask(sequence, m)
 
         tmp = np.ones((num_objects, *masks.shape))
         tmp = tmp * np.arange(1, num_objects + 1)[:, None, None, None]

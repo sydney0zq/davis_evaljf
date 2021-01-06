@@ -29,6 +29,7 @@ class DAVIS(object):
         :param subset: Set to load the annotations
         :param sequences: Sequences to consider, 'all' to use all the sequences in a set.
         :param resolution: Specify the resolution to use the dataset, choose between '480' and 'Full-Resolution'
+        :param use_pickle: Pickle the Annotations of DAVIS as a single pkl file, however, it will costs at least 6G space, not recommend
         """
         if subset not in self.SUBSET_OPTIONS:
             raise ValueError(f'Subset should be in {self.SUBSET_OPTIONS}')
@@ -43,6 +44,7 @@ class DAVIS(object):
         self.mask_path = os.path.join(self.root, annotations_folder, resolution)
         year = '2019' if task == 'unsupervised' and (subset == 'test-dev' or subset == 'test-challenge') else '2017'
         self.imagesets_path = os.path.join(self.root, 'ImageSets', year)
+        self.year = year
 
         self._check_directories()
 
@@ -73,7 +75,7 @@ class DAVIS(object):
         cache_dir = os.path.join(CURR_DIR, "cache")
         os.makedirs(cache_dir, exist_ok=True)
 
-        pkl_name = f"davis_{self.task}_{self.subset}_mask.pkl"
+        pkl_name = f"davis{self.year}_{self.task}_{self.subset}_mask.pkl"
         cache_fn = os.path.join(cache_dir, pkl_name)
         if os.path.exists(cache_fn):
             print ("DAVIS masks have been cached to {}...".format(cache_fn))
@@ -127,12 +129,14 @@ class DAVIS(object):
     def get_all_images(self, sequence):
         return self._get_all_elements(sequence, 'images')
 
-    def get_all_masks(self, sequence, separate_objects_masks=False):
+    def get_all_masks(self, sequence, separate_objects_masks=False, parallel=True):
         if self.use_pickle:
             masks, masks_id = self.seq_masks[sequence]
         else:
-            masks, masks_id = self._get_all_elements(sequence, 'masks')
-            # masks, masks_id = self._get_all_elements_parallel(sequence, 'masks')
+            if parallel:
+                masks, masks_id = self._get_all_elements_parallel(sequence, 'masks')
+            else:
+                masks, masks_id = self._get_all_elements(sequence, 'masks')
         masks_void = np.zeros_like(masks)
 
         # Separate void and object masks

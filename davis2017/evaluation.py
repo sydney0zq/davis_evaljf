@@ -16,7 +16,7 @@ from concurrent import futures
 
 
 class DAVISEvaluation(object):
-    def __init__(self, davis_root, task, gt_set, sequences='all', codalab=False):
+    def __init__(self, davis_root, task, gt_set, sequences='all', use_parallel=True, codalab=False):
         """
         Class to evaluate DAVIS sequences from a certain set and for a certain task
         :param davis_root: Path to the DAVIS folder that contains JPEGImages, Annotations, etc. folders.
@@ -26,6 +26,7 @@ class DAVISEvaluation(object):
         """
         self.davis_root = davis_root
         self.task = task
+        self.use_parallel = use_parallel
         self.dataset = DAVIS(root=davis_root, task=task, subset=gt_set, sequences=sequences, use_pickle=False, codalab=codalab)
 
     @staticmethod
@@ -108,10 +109,10 @@ class DAVISEvaluation(object):
         results = Results(root_dir=res_path)
         seq_info = OrderedDict()
         for seq in list(self.dataset.get_sequences()):
-            all_gt_masks, all_void_masks, all_masks_id = self.dataset.get_all_masks(seq, True)
+            all_gt_masks, all_void_masks, all_masks_id = self.dataset.get_all_masks(seq, separate_objects_masks=True, parallel=self.use_parallel)
             if self.task == 'semi-supervised':
                 all_gt_masks, all_masks_id = all_gt_masks[:, 1:-1, :, :], all_masks_id[1:-1]
-            all_res_masks = results.read_masks(seq, all_masks_id)
+            all_res_masks = results.read_masks(seq, all_masks_id, parallel=self.use_parallel)
             if self.task == 'unsupervised':
                 j_metrics_res, f_metrics_res = self._evaluate_unsupervised(all_gt_masks, all_res_masks, all_void_masks, metric)
             elif self.task == 'semi-supervised':

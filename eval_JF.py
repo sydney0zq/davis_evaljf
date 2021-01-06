@@ -19,7 +19,7 @@ csv_name_global_path = f'{RES_PATH}/global_results-{IMSET}.csv'
 csv_name_per_sequence_path = f'{RES_PATH}/per-sequence_results-{IMSET}.csv'
 
 time_start = time.time()
-dataset_eval = DAVISEvaluation(davis_root=DAVIS_ROOT, task="semi-supervised", gt_set="val")
+dataset_eval = DAVISEvaluation(davis_root=DAVIS_ROOT, task="semi-supervised", gt_set="val", use_parallel=True)
 metrics_res = dataset_eval.evaluate(RES_PATH)
 # metrics_res = dataset_eval.evaluate_parallel(RES_PATH)
 J, F = metrics_res['J'], metrics_res['F']
